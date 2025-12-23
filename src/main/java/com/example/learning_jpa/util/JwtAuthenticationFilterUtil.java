@@ -1,12 +1,12 @@
-package com.example.learning_jpa.config;
+package com.example.learning_jpa.util;
 
 
-import com.example.learning_jpa.util.AccessJwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,18 +18,18 @@ import java.io.IOException;
 import java.util.Collections;
 
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
 
     @Autowired
     private AccessJwtUtil accessJwtUtil;
 
     private static final String TOKEN_COOKIE_NAME = "ACCESS_TOKEN";
 
-    @Override
+
     protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String jwt = extractTokenFromCookie(request);
 

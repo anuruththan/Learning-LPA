@@ -11,14 +11,13 @@ import java.util.Date;
 @Slf4j
 @Component
 public class AccessJwtUtil {
-    @Value("${SECRET_KEY}")
+    @Value("${ACCESS_SECRET_KEY}")
     private String SECRET_KEY;
 
-    @Value("${EXPIRATION_Time}")
+    @Value("${ACCESS_EXPIRATION_Time}")
     private int EXPIRATION_TIME;
 
     public String generateToken(String email, Integer role) {
-        log.info(SECRET_KEY);
         String token;
         token = Jwts.builder()
                 .setSubject(email)
@@ -27,7 +26,6 @@ public class AccessJwtUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
                 .compact();
-        log.info(token);
         return token;
     }
 
