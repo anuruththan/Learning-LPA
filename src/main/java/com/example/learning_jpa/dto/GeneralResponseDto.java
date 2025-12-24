@@ -1,6 +1,5 @@
 package com.example.learning_jpa.dto;
 
-
 import lombok.Getter;
 import lombok.Setter;
 

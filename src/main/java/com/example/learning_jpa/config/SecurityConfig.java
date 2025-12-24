@@ -2,6 +2,12 @@ package com.example.learning_jpa.config;
 
 
 import com.example.learning_jpa.util.JwtAuthenticationFilterUtil;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.io.IOException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,11 +19,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.List;
+
 @Configuration
 public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilterUtil jwtAuthenticationFilterUtil;
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -28,13 +37,13 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/ws/**",
-                                "/chat/**"
+                                "/auth/**"
                         ).permitAll()
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/employee/**").hasAnyAuthority("EMPLOYEE")
+                        .requestMatchers("/vendor/**").hasAnyAuthority("VENDOR")
                         .anyRequest().authenticated()
                 );
-        http.addFilterBefore(jwtAuthenticationFilterUtil, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(jwtAuthenticationFilterUtil, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

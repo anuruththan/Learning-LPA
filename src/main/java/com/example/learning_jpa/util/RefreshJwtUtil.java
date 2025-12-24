@@ -1,21 +1,23 @@
 package com.example.learning_jpa.util;
 
 import com.example.learning_jpa.enums.Roles;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
 @Slf4j
 @Component
-public class AccessJwtUtil {
-    @Value("${ACCESS_TOKEN_SECRET_KEY}")
+public class RefreshJwtUtil {
+
+    @Value("${REFRESH_TOKEN_SECRET_KEY}")
     private String SECRET_KEY;
 
-    @Value("${ACCESS_TOKEN_EXPIRATION_Time}")
+    @Value("${REFRESH_TOKEN_EXPIATION_TIME}")
     private int EXPIRATION_TIME;
 
     public String generateToken(String email, Roles role) {
@@ -36,6 +38,18 @@ public class AccessJwtUtil {
 
     public String extractRole(String token) {
         return (String) Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody().get("role");
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token);
+            return true;
+        } catch (ExpiredJwtException e) {
+            log.error("Token has expired: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Invalid token: {}", e.getMessage());
+        }
+        return false;
     }
 
 }
