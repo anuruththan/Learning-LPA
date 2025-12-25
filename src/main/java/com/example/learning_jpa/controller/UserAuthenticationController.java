@@ -3,6 +3,7 @@ package com.example.learning_jpa.controller;
 import com.example.learning_jpa.dto.GeneralResponseDto;
 import com.example.learning_jpa.dto.request.UserLoginDto;
 import com.example.learning_jpa.dto.request.UserSignUp;
+import com.example.learning_jpa.enums.Roles;
 import com.example.learning_jpa.service.UserAuthenticationService;
 import com.example.learning_jpa.service.result.AuthResult;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,11 +23,13 @@ public class UserAuthenticationController {
     @Autowired
     private UserAuthenticationService userAuthenticationService;
 
+    @Value("${ACCESS_TOKEN_EXPIRATION_Time}")
+    private int accessTokenExpiryTime;
+
     @Value("${REFRESH_TOKEN_EXPIATION_TIME}")
     private int cookieExpiryTime;
 
     public GeneralResponseDto generalResponse;
-
 
     @NonNull
     private ResponseEntity<GeneralResponseDto> getGeneralResponseDtoResponseEntity(AuthResult result) {
@@ -41,13 +44,15 @@ public class UserAuthenticationController {
         ResponseCookie accessCookie = ResponseCookie.from("ACCESS_TOKEN", accessToken)
                 .httpOnly(true)
                 .secure(true)
-                .maxAge(cookieExpiryTime)
+                .path("/")
+                .maxAge(accessTokenExpiryTime)
                 .sameSite("Lax") // or "Strict"
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", refreshToken)
                 .httpOnly(true)
                 .secure(true)
+                .path("/")
                 .maxAge(cookieExpiryTime)
                 .sameSite("Lax") // or "Strict"
                 .build();
@@ -55,17 +60,31 @@ public class UserAuthenticationController {
         ResponseCookie userEmailCookie = ResponseCookie.from("USER_EMAIL", result.email())
                 .httpOnly(true)
                 .secure(true)
+                .path("/")
                 .maxAge(cookieExpiryTime)
                 .sameSite("Lax") // or "Strict"
                 .build();
 
-        ResponseCookie userRoleCookie = ResponseCookie.from("USER_ROLE", result.role().toString())
-                .httpOnly(true)
-                .secure(true)
-                .maxAge(cookieExpiryTime)
-                .sameSite("Lax") // or "Strict"
-                .build();
+        ResponseCookie userRoleCookie = null;
 
+        if(result.role()!=null) {
+            userRoleCookie = ResponseCookie.from("USER_ROLE", result.role().toString())
+                    .httpOnly(true)
+                    .secure(true)
+                    .path("/")
+                    .maxAge(cookieExpiryTime)
+                    .sameSite("Lax") // or "Strict"
+                    .build();
+        }
+        else{
+            userRoleCookie = ResponseCookie.from("USER_ROLE", null)
+                    .httpOnly(true)
+                    .secure(true)
+                    .path("/")
+                    .maxAge(cookieExpiryTime)
+                    .sameSite("Lax") // or "Strict"
+                    .build();
+        }
         return ResponseEntity.status(generalResponse.getStatusCode())
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
@@ -130,11 +149,15 @@ public class UserAuthenticationController {
 
     @GetMapping("/logout")
     public ResponseEntity<GeneralResponseDto> logout(HttpServletRequest request) {
-        GeneralResponseDto generalResponseDto = new GeneralResponseDto();
-        generalResponseDto.setData(null);
-        generalResponseDto.setRes(true);
-        generalResponseDto.setMsg("Cookies has been cleared.");
-        generalResponseDto.setStatusCode(HttpServletResponse.SC_OK);
+
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) return ResponseEntity.status(HttpServletResponse.SC_OK).body(generalResponse);
+
+        generalResponse = new GeneralResponseDto();
+        generalResponse.setRes(true);
+        generalResponse.setMsg("Cookies has been cleared.");
+        generalResponse.setStatusCode(HttpServletResponse.SC_OK);
         AuthResult authResult = new AuthResult(generalResponse, null, null, null, null);
         return getGeneralResponseDtoResponseEntity(authResult);
     }

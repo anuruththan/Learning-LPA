@@ -163,14 +163,5 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
         return new AuthResult(generalResponse, null, null, null, null);
     }
 
-    @Override
-    public void logout(HttpServletResponse response){
-        Cookie authCookie = new Cookie("ACCESS_TOKEN", null);
-        authCookie.setHttpOnly(true);
-        authCookie.setSecure(true);
-        authCookie.setPath("/");
-        authCookie.setMaxAge(0);
-        response.addCookie(authCookie);
-    }
 
 }

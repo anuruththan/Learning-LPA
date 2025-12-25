@@ -18,11 +18,6 @@ public interface UserAuthenticationService {
     AuthResult login(UserLoginDto userLoginDto);
 
     /**
-     * @param response
-     * **/
-    void logout(HttpServletResponse response);
-
-    /**
      * @param refreshToken
      * **/
     AuthResult refreshToken(String accessToken,String refreshToken);
