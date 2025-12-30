@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface StallAvailabilityService {
     public List<Stall> getAvailableStalls();
+    public List<Stall> getReservedStalls();
+    public List<Stall> getAllStalls();
 }

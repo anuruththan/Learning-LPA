@@ -38,7 +38,6 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
 
     @Override
-    @Transactional
     public void saveGenresForStall(Long stallId, List<String> genreNames) {
         Stall stall = stallDetailsRepository.findById(stallId)
                 .orElseThrow(() -> new RuntimeException("Stall not found"));
@@ -59,7 +58,6 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
 
     @Override
-    @Transactional
     public void reserve(Long userId, List<Long> stallIds) {
 
         Vendor vendor = vendorDetailsRepository.findByUserId(userId)

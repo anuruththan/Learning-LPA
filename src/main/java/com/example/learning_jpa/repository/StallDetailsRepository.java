@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface StallDetailsRepository extends JpaRepository<Stall, Long> {
     List<Stall> findByStatus(StallStatus status);
+    List<Stall> findAll();
 }

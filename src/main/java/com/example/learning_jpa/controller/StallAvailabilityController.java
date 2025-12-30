@@ -19,7 +19,7 @@ public class StallAvailabilityController {
         GeneralResponseDto response = new GeneralResponseDto();
         try{
             response.setRes(true);
-            response.setMsg("Stalls are available.");
+            response.setMsg("Consist Available Stalls.");
             response.setStatusCode(200);
             response.setData(stallAvailabilityService.getAvailableStalls());
         }
@@ -30,4 +30,37 @@ public class StallAvailabilityController {
         };
         return response;
     }
+
+    @GetMapping("/reserved")
+    public GeneralResponseDto getReservedStalls(){
+        GeneralResponseDto response = new GeneralResponseDto();
+        try{
+            response.setRes(true);
+            response.setMsg("Consist Reserved Stalls.");
+            response.setStatusCode(200);
+            response.setData(stallAvailabilityService.getReservedStalls());
+        }
+        catch (Exception e){
+            response.setRes(false);
+        }
+        return response;
+    }
+
+    @GetMapping("/all")
+    public GeneralResponseDto getAllStalls(){
+        GeneralResponseDto response = new GeneralResponseDto();
+        try{
+            response.setRes(true);
+            response.setMsg("Consist All Stalls.");
+            response.setStatusCode(200);
+            response.setData(stallAvailabilityService.getAllStalls());
+        }
+        catch (Exception e){
+            response.setRes(false);
+            response.setMsg(e.getMessage());
+            response.setStatusCode(500);
+        }
+        return response;
+    }
+
 }
