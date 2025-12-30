@@ -1,9 +1,7 @@
 package com.example.learning_jpa.service.impl;
 
-import com.example.learning_jpa.entity.Genre;
-import com.example.learning_jpa.entity.Reservation;
-import com.example.learning_jpa.entity.Stall;
-import com.example.learning_jpa.entity.Vendor;
+import com.example.learning_jpa.dto.request.GenreDto;
+import com.example.learning_jpa.entity.*;
 import com.example.learning_jpa.enums.StallStatus;
 import com.example.learning_jpa.repository.*;
 import com.example.learning_jpa.service.EmailService;
@@ -24,10 +22,10 @@ public class VendorReservationServiceImpl implements VendorReservationService {
     private StallDetailsRepository stallDetailsRepository;
 
     @Autowired
-    private ReservationDetailsRepository reservationDetailsRepository;
+    private UserAuthRepository userAuthRepository;
 
     @Autowired
-    private UserAuthRepository userAuthRepository;
+    private ReservationDetailsRepository reservationDetailsRepository;
 
     @Autowired
     private GenreDetailsRepository genreDetailsRepository;
@@ -36,10 +34,33 @@ public class VendorReservationServiceImpl implements VendorReservationService {
     private EmailService emailService;
 
 
+    /**
+     * Persists genres for stall; updates existing entries
+     */
     @Override
-    public void saveGenresForStall(Long stallId, List<String> genreNames) {
+    public void saveGenresForStall(GenreDto genreDto) {
+
+        Long stallId = genreDto.getStallId();
+        List<String> genreNames = genreDto.getGenreNames();
+
         Stall stall = stallDetailsRepository.findById(stallId)
                 .orElseThrow(() -> new RuntimeException("Stall not found"));
+
+        if(stall.getStatus() == StallStatus.AVAILABLE) {
+            throw new RuntimeException("Stall is not reserved");
+        }
+
+        User user = userAuthRepository.findByEmail(genreDto.getUserEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Vendor vendor = vendorDetailsRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+        List<Reservation> reservation = reservationDetailsRepository.findReservationByVendor(vendor);
+
+        if(reservation.isEmpty()) {
+            throw new RuntimeException("Vendor has no reservation");
+        }
 
         // Remove existing genres (update)
         genreDetailsRepository.deleteAll(stall.getGenres());
