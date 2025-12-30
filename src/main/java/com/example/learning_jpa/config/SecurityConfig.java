@@ -35,12 +35,11 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/api/auth/**",
-                                "/api/stall/**"
+                                "/api/auth/**"
                         ).permitAll()
-//                        .requestMatchers().hasAnyAuthority("VENDOR", "EMPLOYEE")
-                        .requestMatchers("/employee/**").hasAnyAuthority("EMPLOYEE")
-                        .requestMatchers("/vendor/**").hasAnyAuthority("VENDOR")
+                        .requestMatchers("/api/stall/**").hasAnyRole("EMPLOYEE", "VENDOR")
+                        .requestMatchers("/employee/**").hasAnyRole("EMPLOYEE")
+                        .requestMatchers("/vendor/**").hasAnyRole("VENDOR")
                         .anyRequest().authenticated()
                 );
         http.addFilterAfter(jwtAuthenticationFilterUtil, UsernamePasswordAuthenticationFilter.class);
@@ -67,9 +66,6 @@ public class SecurityConfig {
             }
         };
     }
-
-
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
