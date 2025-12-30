@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public interface UserAuthenticationService {
 
     /**
+     *  Signs up user; returns auth result
      * @param userSignUp
      * **/
     AuthResult signUp(UserSignUp userSignUp);

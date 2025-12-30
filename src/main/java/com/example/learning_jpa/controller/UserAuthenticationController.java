@@ -3,7 +3,6 @@ package com.example.learning_jpa.controller;
 import com.example.learning_jpa.dto.GeneralResponseDto;
 import com.example.learning_jpa.dto.request.UserLoginDto;
 import com.example.learning_jpa.dto.request.UserSignUp;
-import com.example.learning_jpa.enums.Roles;
 import com.example.learning_jpa.service.UserAuthenticationService;
 import com.example.learning_jpa.service.result.AuthResult;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,7 +16,7 @@ import jakarta.servlet.http.Cookie;
 
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class UserAuthenticationController {
 
     @Autowired

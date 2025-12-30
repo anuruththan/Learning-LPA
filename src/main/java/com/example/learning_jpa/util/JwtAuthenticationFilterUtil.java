@@ -35,7 +35,7 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/auth/**"
+            "/api/auth/**"
     );
 
     @Override

@@ -18,7 +18,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -36,8 +35,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/auth/**"
+                                "/api/auth/**",
+                                "/api/stall/**"
                         ).permitAll()
+//                        .requestMatchers().hasAnyAuthority("VENDOR", "EMPLOYEE")
                         .requestMatchers("/employee/**").hasAnyAuthority("EMPLOYEE")
                         .requestMatchers("/vendor/**").hasAnyAuthority("VENDOR")
                         .anyRequest().authenticated()
