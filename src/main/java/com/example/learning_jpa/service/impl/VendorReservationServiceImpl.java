@@ -8,7 +8,6 @@ import com.example.learning_jpa.enums.StallStatus;
 import com.example.learning_jpa.repository.*;
 import com.example.learning_jpa.service.EmailService;
 import com.example.learning_jpa.service.VendorReservationService;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +27,7 @@ public class VendorReservationServiceImpl implements VendorReservationService {
     private ReservationDetailsRepository reservationDetailsRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private UserAuthRepository userAuthRepository;
 
     @Autowired
     private GenreDetailsRepository genreDetailsRepository;
@@ -90,7 +89,7 @@ public class VendorReservationServiceImpl implements VendorReservationService {
             reservationDetailsRepository.save(reservation);
             stallDetailsRepository.save(stall);
 
-            String userEmail = userRepository.findById(userId).get().getEmail();
+            String userEmail = userAuthRepository.findById(userId).get().getEmail();
 
             emailService.sendConfirmation(userEmail , UUID);
         }
