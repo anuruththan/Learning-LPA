@@ -5,15 +5,13 @@ import com.example.learning_jpa.dto.request.UserLoginDto;
 import com.example.learning_jpa.dto.request.UserSignUp;
 import com.example.learning_jpa.entity.User;
 import com.example.learning_jpa.enums.Roles;
-import com.example.learning_jpa.repository.UserRepository;
+import com.example.learning_jpa.repository.UserAuthRepository;
 import com.example.learning_jpa.service.UserAuthenticationService;
 import com.example.learning_jpa.service.result.AuthResult;
 import com.example.learning_jpa.util.AccessJwtUtil;
 import com.example.learning_jpa.util.HashUtil;
 import com.example.learning_jpa.util.RefreshJwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,7 +28,7 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
     private RefreshJwtUtil refreshJwtUtil;
 
     @Autowired
-    private UserRepository userRepository;
+    private UserAuthRepository userAuthRepository;
 
     @Autowired
     private HashUtil hashUtil;
@@ -49,7 +47,7 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
             return new AuthResult(generalResponse, null, null, null, null);
         }
 
-        if (userRepository.existsByEmail(userSignUp.getEmail())) {
+        if (userAuthRepository.existsByEmail(userSignUp.getEmail())) {
             generalResponse.setData("Already Exists Email");
             generalResponse.setMsg("Enter Valid New Email");
             return new AuthResult(generalResponse, null, null, null, null);
@@ -67,7 +65,7 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
             generalResponse.setRes(true);
             generalResponse.setStatusCode(200);
             generalResponse.setMsg("User has been created");
-            userRepository.save(user);
+            userAuthRepository.save(user);
 
             String accessToken = accessJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
             String refreshToken  = refreshJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
@@ -87,7 +85,7 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
 
         try {
 
-            User user = userRepository.findByEmail(userLoginDto.getEmail()).orElse(null);
+            User user = userAuthRepository.findByEmail(userLoginDto.getEmail()).orElse(null);
 
             if (user == null) {
                 generalResponse.setData("Invalid Email");

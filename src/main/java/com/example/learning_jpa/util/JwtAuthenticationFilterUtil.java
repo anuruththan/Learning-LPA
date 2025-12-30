@@ -32,10 +32,10 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private static final List<String> EXCLUDED_PATTERNS = List.of(
-            "/auth/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/auth/**"
     );
 
     @Override
@@ -54,12 +54,9 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
 
         try {
             String jwt = extractTokenFromCookie(request);
-
             if (jwt != null) {
-
                 String email = accessJwtUtil.extractEmail(jwt);
                 String role = accessJwtUtil.extractRole(jwt);
-
                 if (email != null && role != null &&
                         SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -76,8 +73,7 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
             }
 
             filterChain.doFilter(request, response);
-        }
-        catch (ExpiredJwtException e) {
+        } catch (ExpiredJwtException e) {
             log.error("JWT token has been expired {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
