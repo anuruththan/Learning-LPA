@@ -1,6 +1,8 @@
 package com.example.learning_jpa.service;
 
 import com.example.learning_jpa.dto.request.GenreDto;
+import com.example.learning_jpa.dto.request.ReservationDto;
+
 import java.util.List;
 
 public interface VendorReservationService {
@@ -13,6 +15,7 @@ public interface VendorReservationService {
 
     /**
      * Reserves stalls for vendor; sends confirmation email
+     * @param reservationDto
      */
-    public void reserve(Long userId, List<Long> stallIds);
+    public void reserve(ReservationDto reservationDto);
 }

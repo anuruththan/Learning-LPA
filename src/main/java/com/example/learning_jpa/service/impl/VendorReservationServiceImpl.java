@@ -1,6 +1,7 @@
 package com.example.learning_jpa.service.impl;
 
 import com.example.learning_jpa.dto.request.GenreDto;
+import com.example.learning_jpa.dto.request.ReservationDto;
 import com.example.learning_jpa.entity.*;
 import com.example.learning_jpa.enums.StallStatus;
 import com.example.learning_jpa.repository.*;
@@ -78,9 +79,14 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
 
     @Override
-    public void reserve(Long userId, List<Long> stallIds) {
+    public void reserve(ReservationDto reservationDto) {
 
-        Vendor vendor = vendorDetailsRepository.findByUserId(userId)
+        List<Long> stallIds = reservationDto.getStallIds();
+
+        User user = userAuthRepository.findByEmail(reservationDto.getUserEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Vendor vendor = vendorDetailsRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new RuntimeException("Vendor not found"));
 
         if (reservationDetailsRepository.countByVendorId(vendor.getId()) + stallIds.size() > 3) {
@@ -103,16 +109,14 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
 
             String UUID = java.util.UUID.randomUUID().toString();
-            reservation.setQrCode(UUID);
 
+            reservation.setQrCode(UUID);
             stall.setStatus(StallStatus.RESERVED);
 
             reservationDetailsRepository.save(reservation);
             stallDetailsRepository.save(stall);
 
-            String userEmail = userAuthRepository.findById(userId).get().getEmail();
-
-            emailService.sendConfirmation(userEmail , UUID);
+            emailService.sendConfirmation(reservationDto.getUserEmail() , UUID);
         }
 
     }
