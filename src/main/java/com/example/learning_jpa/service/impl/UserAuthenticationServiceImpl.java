@@ -4,8 +4,10 @@ import com.example.learning_jpa.dto.GeneralResponseDto;
 import com.example.learning_jpa.dto.request.UserLoginDto;
 import com.example.learning_jpa.dto.request.UserSignUp;
 import com.example.learning_jpa.entity.User;
+import com.example.learning_jpa.entity.Vendor;
 import com.example.learning_jpa.enums.Roles;
 import com.example.learning_jpa.repository.UserAuthRepository;
+import com.example.learning_jpa.repository.VendorDetailsRepository;
 import com.example.learning_jpa.service.UserAuthenticationService;
 import com.example.learning_jpa.service.result.AuthResult;
 import com.example.learning_jpa.util.AccessJwtUtil;
@@ -13,6 +15,7 @@ import com.example.learning_jpa.util.HashUtil;
 import com.example.learning_jpa.util.RefreshJwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
+import org.antlr.v4.runtime.misc.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +32,9 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
 
     @Autowired
     private UserAuthRepository userAuthRepository;
+
+    @Autowired
+    private VendorDetailsRepository vendorDetailsRepository;
 
     @Autowired
     private HashUtil hashUtil;
@@ -61,11 +67,18 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
             user.setMobileNumber(userSignUp.getMobileNumber());
             user.setRoles(userSignUp.getRoles());
 
+            User savedUser = userAuthRepository.save(user);
+
+            if (savedUser.getRoles() == Roles.VENDOR) {
+                Vendor vendor = new Vendor();
+                vendor.setUser(savedUser);
+                vendorDetailsRepository.save(vendor);
+            }
+
             generalResponse.setData("User has been created");
             generalResponse.setRes(true);
             generalResponse.setStatusCode(200);
             generalResponse.setMsg("User has been created");
-            userAuthRepository.save(user);
 
             String accessToken = accessJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
             String refreshToken  = refreshJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());

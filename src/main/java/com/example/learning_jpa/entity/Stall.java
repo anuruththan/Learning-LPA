@@ -3,6 +3,7 @@ package com.example.learning_jpa.entity;
 
 import com.example.learning_jpa.enums.StallSize;
 import com.example.learning_jpa.enums.StallStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,6 +31,7 @@ public class Stall {
     private StallStatus status;
 
     @OneToOne(mappedBy = "stall")
+    @JsonManagedReference
     private Reservation reservation;
 
     @OneToMany(mappedBy = "stall", cascade = CascadeType.ALL, orphanRemoval = true)

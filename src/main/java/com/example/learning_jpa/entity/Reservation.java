@@ -1,6 +1,7 @@
 package com.example.learning_jpa.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,6 +22,8 @@ public class Reservation {
     private Vendor vendor;
 
     @OneToOne
+    @JoinColumn(name = "stall_id")
+    @JsonBackReference
     private Stall stall;
 
     private LocalDateTime reservedAt;
