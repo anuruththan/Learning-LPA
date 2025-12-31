@@ -1,7 +1,7 @@
 package com.example.learning_jpa.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,7 +23,7 @@ public class Reservation {
 
     @OneToOne
     @JoinColumn(name = "stall_id")
-    @JsonBackReference
+    @JsonIgnore
     private Stall stall;
 
     private LocalDateTime reservedAt;

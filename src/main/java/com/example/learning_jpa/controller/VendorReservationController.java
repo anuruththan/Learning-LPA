@@ -19,12 +19,6 @@ public class VendorReservationController {
 
     GeneralResponseDto response;
 
-    /**
-     * Able to add genre or modify genre
-     * Able to book stall
-     *
-     **/
-
     @PostMapping("/add/genre")
     public GeneralResponseDto addGenre(@RequestBody GenreDto genreDto) {
         response = new GeneralResponseDto();
