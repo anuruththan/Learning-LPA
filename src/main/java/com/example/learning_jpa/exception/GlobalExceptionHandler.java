@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Responds to validation errors with unauthorized status
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<GeneralResponseDto> handleValidationExceptions(MethodArgumentNotValidException ex) {
         GeneralResponseDto response = new GeneralResponseDto();
@@ -20,9 +23,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
+    /**
+     * Handles illegal argument exceptions; returns bad request
+     */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleIllegalArg(IllegalArgumentException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    public ResponseEntity<GeneralResponseDto> handleIllegalArg(IllegalArgumentException ex) {
+        GeneralResponseDto response = new GeneralResponseDto();
+        response.setRes(false);
+        response.setMsg(ex.getMessage());
+        response.setData(null);
+        response.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
 }

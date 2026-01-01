@@ -15,7 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -57,14 +56,16 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
             if (jwt != null) {
                 String email = accessJwtUtil.extractEmail(jwt);
                 String role = accessJwtUtil.extractRole(jwt);
+                log.info("JWT token extracted successfully. Email: {}, Role: {}", email, role);
                 if (email != null && role != null &&
                         SecurityContextHolder.getContext().getAuthentication() == null) {
 
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     email,
+                                    null,
                                     Collections.singletonList(
-                                            new SimpleGrantedAuthority(role.toString())
+                                            new SimpleGrantedAuthority("ROLE_" + role)
                                     )
                             );
 

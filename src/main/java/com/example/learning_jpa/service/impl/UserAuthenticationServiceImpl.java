@@ -4,15 +4,20 @@ import com.example.learning_jpa.dto.GeneralResponseDto;
 import com.example.learning_jpa.dto.request.UserLoginDto;
 import com.example.learning_jpa.dto.request.UserSignUp;
 import com.example.learning_jpa.entity.User;
+import com.example.learning_jpa.entity.Vendor;
 import com.example.learning_jpa.enums.Roles;
 import com.example.learning_jpa.repository.UserAuthRepository;
+import com.example.learning_jpa.repository.VendorDetailsRepository;
 import com.example.learning_jpa.service.UserAuthenticationService;
 import com.example.learning_jpa.service.result.AuthResult;
 import com.example.learning_jpa.util.AccessJwtUtil;
 import com.example.learning_jpa.util.HashUtil;
 import com.example.learning_jpa.util.RefreshJwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.antlr.v4.runtime.misc.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +34,9 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
 
     @Autowired
     private UserAuthRepository userAuthRepository;
+
+    @Autowired
+    private VendorDetailsRepository vendorDetailsRepository;
 
     @Autowired
     private HashUtil hashUtil;
@@ -61,14 +69,21 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
             user.setMobileNumber(userSignUp.getMobileNumber());
             user.setRoles(userSignUp.getRoles());
 
+            User savedUser = userAuthRepository.save(user);
+
+            if (savedUser.getRoles() == Roles.VENDOR) {
+                Vendor vendor = new Vendor();
+                vendor.setUser(savedUser);
+                vendorDetailsRepository.save(vendor);
+            }
+
             generalResponse.setData("User has been created");
             generalResponse.setRes(true);
             generalResponse.setStatusCode(200);
             generalResponse.setMsg("User has been created");
-            userAuthRepository.save(user);
 
             String accessToken = accessJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
-            String refreshToken  = refreshJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
+            String refreshToken = refreshJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
 
             return new AuthResult(generalResponse, user.getEmail(), userSignUp.getRoles(), accessToken, refreshToken);
         } catch (Exception e) {
@@ -110,7 +125,7 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
             generalResponse.setStatusCode(200);
 
             String accessToken = accessJwtUtil.generateToken(userLoginDto.getEmail(), user.getRoles());
-            String refreshToken  = refreshJwtUtil.generateToken(userLoginDto.getEmail(), user.getRoles());
+            String refreshToken = refreshJwtUtil.generateToken(userLoginDto.getEmail(), user.getRoles());
 
             return new AuthResult(generalResponse, user.getEmail(), user.getRoles(), accessToken, refreshToken);
 
@@ -123,16 +138,25 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
     }
 
     @Override
-    public AuthResult refreshToken(String accessToken,String refreshToken){
+    public AuthResult refreshToken(HttpServletRequest request) {
         generalResponse = new GeneralResponseDto();
         try {
+            Cookie[] cookies = request.getCookies();
+            if (cookies == null) throw new IllegalArgumentException("Missing refresh token.");
 
-            if(!refreshJwtUtil.validateToken(refreshToken)){
-                generalResponse.setData("Invalid Token");
-                generalResponse.setStatusCode(401);
-                generalResponse.setMsg("Refresh Token has been expired");
-                return new AuthResult(generalResponse, null, null, null, null);
+            String refreshToken = null;
+
+            for (Cookie cookie : cookies) {
+                if ("REFRESH_TOKEN".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
             }
+
+            if (refreshToken == null) throw new IllegalArgumentException("Missing refresh token.");
+
+            if (!refreshJwtUtil.validateToken(refreshToken))
+                throw new IllegalArgumentException("Invalid refresh token.");
 
 
             // Validate Refresh Token
@@ -150,14 +174,8 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
 
                 return new AuthResult(generalResponse, email, role, newAccessToken, newRefreshToken);
             }
-        } catch (ExpiredJwtException e) {
-            generalResponse.setRes(false);
-            generalResponse.setMsg("Refresh token expired. Please log in again.");
-            generalResponse.setStatusCode(401);
         } catch (Exception e) {
-            generalResponse.setRes(false);
-            generalResponse.setMsg("Invalid refresh token.");
-            generalResponse.setStatusCode(401);
+            throw new IllegalArgumentException("Invalid refresh token.");
         }
         return new AuthResult(generalResponse, null, null, null, null);
     }

@@ -1,18 +1,23 @@
 package com.example.learning_jpa.service.impl;
 
-import com.example.learning_jpa.entity.Genre;
-import com.example.learning_jpa.entity.Reservation;
-import com.example.learning_jpa.entity.Stall;
-import com.example.learning_jpa.entity.Vendor;
+import com.example.learning_jpa.dto.request.GenreDto;
+import com.example.learning_jpa.dto.request.ReservationDto;
+import com.example.learning_jpa.entity.*;
 import com.example.learning_jpa.enums.StallStatus;
 import com.example.learning_jpa.repository.*;
 import com.example.learning_jpa.service.EmailService;
 import com.example.learning_jpa.service.VendorReservationService;
+import com.google.zxing.WriterException;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class VendorReservationServiceImpl implements VendorReservationService {
@@ -24,10 +29,10 @@ public class VendorReservationServiceImpl implements VendorReservationService {
     private StallDetailsRepository stallDetailsRepository;
 
     @Autowired
-    private ReservationDetailsRepository reservationDetailsRepository;
+    private UserAuthRepository userAuthRepository;
 
     @Autowired
-    private UserAuthRepository userAuthRepository;
+    private ReservationDetailsRepository reservationDetailsRepository;
 
     @Autowired
     private GenreDetailsRepository genreDetailsRepository;
@@ -36,10 +41,33 @@ public class VendorReservationServiceImpl implements VendorReservationService {
     private EmailService emailService;
 
 
+    /**
+     * Persists genres for stall; updates existing entries
+     */
     @Override
-    public void saveGenresForStall(Long stallId, List<String> genreNames) {
+    public void saveGenresForStall(GenreDto genreDto) {
+
+        Long stallId = genreDto.getStallId();
+        List<String> genreNames = genreDto.getGenreNames();
+
         Stall stall = stallDetailsRepository.findById(stallId)
                 .orElseThrow(() -> new RuntimeException("Stall not found"));
+
+        if (stall.getStatus() == StallStatus.AVAILABLE) {
+            throw new RuntimeException("Stall is not reserved");
+        }
+
+        User user = userAuthRepository.findByEmail(genreDto.getUserEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Vendor vendor = vendorDetailsRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+        List<Reservation> reservation = reservationDetailsRepository.findReservationByVendor(vendor);
+
+        if (reservation.isEmpty()) {
+            throw new RuntimeException("Vendor has no reservation");
+        }
 
         // Remove existing genres (update)
         genreDetailsRepository.deleteAll(stall.getGenres());
@@ -57,9 +85,27 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
 
     @Override
-    public void reserve(Long userId, List<Long> stallIds) {
+    public void reserve(ReservationDto reservationDto, HttpServletRequest request) throws MessagingException, IOException, WriterException {
 
-        Vendor vendor = vendorDetailsRepository.findByUserId(userId)
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) throw new IllegalArgumentException("Missing refresh token.");
+
+        for (Cookie cookie : cookies) {
+
+            if ("USER_EMAIL".equals(cookie.getName())) {
+                if (!Objects.equals(reservationDto.getUserEmail(), cookie.getValue()))
+                    throw new IllegalArgumentException("Cannot reserve for others");
+            }
+
+        }
+
+
+        List<Long> stallIds = reservationDto.getStallIds();
+
+        User user = userAuthRepository.findByEmail(reservationDto.getUserEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Vendor vendor = vendorDetailsRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new RuntimeException("Vendor not found"));
 
         if (reservationDetailsRepository.countByVendorId(vendor.getId()) + stallIds.size() > 3) {
@@ -82,16 +128,14 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
 
             String UUID = java.util.UUID.randomUUID().toString();
-            reservation.setQrCode(UUID);
 
+            reservation.setQrCode(UUID);
             stall.setStatus(StallStatus.RESERVED);
+
+            emailService.sendConfirmation(reservationDto.getUserEmail(), UUID);
 
             reservationDetailsRepository.save(reservation);
             stallDetailsRepository.save(stall);
-
-            String userEmail = userAuthRepository.findById(userId).get().getEmail();
-
-            emailService.sendConfirmation(userEmail , UUID);
         }
 
     }

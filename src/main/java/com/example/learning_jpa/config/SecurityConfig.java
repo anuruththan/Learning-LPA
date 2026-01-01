@@ -1,7 +1,7 @@
 package com.example.learning_jpa.config;
 
-
 import com.example.learning_jpa.util.JwtAuthenticationFilterUtil;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +25,9 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilterUtil jwtAuthenticationFilterUtil;
 
-
+    /**
+     * Configures stateless security filter chain with role‑based authorization
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
@@ -35,12 +37,11 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/api/auth/**",
-                                "/api/stall/**"
+                                "/api/auth/**"
                         ).permitAll()
-//                        .requestMatchers().hasAnyAuthority("VENDOR", "EMPLOYEE")
-                        .requestMatchers("/employee/**").hasAnyAuthority("EMPLOYEE")
-                        .requestMatchers("/vendor/**").hasAnyAuthority("VENDOR")
+                        .requestMatchers("/api/stall/**").hasAnyRole("EMPLOYEE", "VENDOR")
+                        .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE")
+                        .requestMatchers("/api/vendor/**").hasAnyRole("VENDOR")
                         .anyRequest().authenticated()
                 );
         http.addFilterAfter(jwtAuthenticationFilterUtil, UsernamePasswordAuthenticationFilter.class);
@@ -58,18 +59,16 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
-            public void addCorsMappings(CorsRegistry registry) {
+            public void addCorsMappings(@NonNull CorsRegistry registry) {
                 registry.addMapping("/v3/api-docs/**").allowedOrigins("*");
             }
         };
     }
-
-
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
