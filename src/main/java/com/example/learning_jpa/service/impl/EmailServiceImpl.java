@@ -1,5 +1,7 @@
 package com.example.learning_jpa.service.impl;
 
+import com.example.learning_jpa.entity.User;
+import com.example.learning_jpa.repository.UserAuthRepository;
 import com.example.learning_jpa.service.EmailService;
 import com.example.learning_jpa.service.QrCodeGenService;
 import com.google.zxing.WriterException;
@@ -21,6 +23,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -36,6 +39,9 @@ public class EmailServiceImpl implements EmailService {
     @Autowired
     private QrCodeGenService qrCodeGenService;
 
+    @Autowired
+    private UserAuthRepository userAuthRepository;
+
     @Value("${spring.mail.username}")
     private String emailId;
 
@@ -44,7 +50,14 @@ public class EmailServiceImpl implements EmailService {
 
         byte[] qrCode = qrCodeGenService.generateQrCode(uuid);
         Context context = new Context();
-        context.setVariable("name", receiverEmail);
+
+
+        User user = userAuthRepository.findByEmail(receiverEmail).orElseThrow(() -> new RuntimeException("User not found"));
+
+        String fullName = user.getFirstName() + " " + user.getLastName();
+
+
+        context.setVariable("name", fullName);
         context.setVariable("uuid", uuid);
 
         String htmlContent = templateEngine.process("qr-email", context);

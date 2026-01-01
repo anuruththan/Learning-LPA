@@ -14,6 +14,8 @@ import com.example.learning_jpa.util.AccessJwtUtil;
 import com.example.learning_jpa.util.HashUtil;
 import com.example.learning_jpa.util.RefreshJwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.antlr.v4.runtime.misc.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +83,7 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
             generalResponse.setMsg("User has been created");
 
             String accessToken = accessJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
-            String refreshToken  = refreshJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
+            String refreshToken = refreshJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
 
             return new AuthResult(generalResponse, user.getEmail(), userSignUp.getRoles(), accessToken, refreshToken);
         } catch (Exception e) {
@@ -123,7 +125,7 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
             generalResponse.setStatusCode(200);
 
             String accessToken = accessJwtUtil.generateToken(userLoginDto.getEmail(), user.getRoles());
-            String refreshToken  = refreshJwtUtil.generateToken(userLoginDto.getEmail(), user.getRoles());
+            String refreshToken = refreshJwtUtil.generateToken(userLoginDto.getEmail(), user.getRoles());
 
             return new AuthResult(generalResponse, user.getEmail(), user.getRoles(), accessToken, refreshToken);
 
@@ -136,16 +138,25 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
     }
 
     @Override
-    public AuthResult refreshToken(String accessToken,String refreshToken){
+    public AuthResult refreshToken(HttpServletRequest request) {
         generalResponse = new GeneralResponseDto();
         try {
+            Cookie[] cookies = request.getCookies();
+            if (cookies == null) throw new IllegalArgumentException("Missing refresh token.");
 
-            if(!refreshJwtUtil.validateToken(refreshToken)){
-                generalResponse.setData("Invalid Token");
-                generalResponse.setStatusCode(401);
-                generalResponse.setMsg("Refresh Token has been expired");
-                return new AuthResult(generalResponse, null, null, null, null);
+            String refreshToken = null;
+
+            for (Cookie cookie : cookies) {
+                if ("REFRESH_TOKEN".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
             }
+
+            if (refreshToken == null) throw new IllegalArgumentException("Missing refresh token.");
+
+            if (!refreshJwtUtil.validateToken(refreshToken))
+                throw new IllegalArgumentException("Invalid refresh token.");
 
 
             // Validate Refresh Token
@@ -163,14 +174,8 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
 
                 return new AuthResult(generalResponse, email, role, newAccessToken, newRefreshToken);
             }
-        } catch (ExpiredJwtException e) {
-            generalResponse.setRes(false);
-            generalResponse.setMsg("Refresh token expired. Please log in again.");
-            generalResponse.setStatusCode(401);
         } catch (Exception e) {
-            generalResponse.setRes(false);
-            generalResponse.setMsg("Invalid refresh token.");
-            generalResponse.setStatusCode(401);
+            throw new IllegalArgumentException("Invalid refresh token.");
         }
         return new AuthResult(generalResponse, null, null, null, null);
     }

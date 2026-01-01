@@ -9,12 +9,15 @@ import com.example.learning_jpa.service.EmailService;
 import com.example.learning_jpa.service.VendorReservationService;
 import com.google.zxing.WriterException;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class VendorReservationServiceImpl implements VendorReservationService {
@@ -50,7 +53,7 @@ public class VendorReservationServiceImpl implements VendorReservationService {
         Stall stall = stallDetailsRepository.findById(stallId)
                 .orElseThrow(() -> new RuntimeException("Stall not found"));
 
-        if(stall.getStatus() == StallStatus.AVAILABLE) {
+        if (stall.getStatus() == StallStatus.AVAILABLE) {
             throw new RuntimeException("Stall is not reserved");
         }
 
@@ -62,7 +65,7 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
         List<Reservation> reservation = reservationDetailsRepository.findReservationByVendor(vendor);
 
-        if(reservation.isEmpty()) {
+        if (reservation.isEmpty()) {
             throw new RuntimeException("Vendor has no reservation");
         }
 
@@ -82,7 +85,20 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
 
     @Override
-    public void reserve(ReservationDto reservationDto) throws MessagingException, IOException, WriterException {
+    public void reserve(ReservationDto reservationDto, HttpServletRequest request) throws MessagingException, IOException, WriterException {
+
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) throw new IllegalArgumentException("Missing refresh token.");
+
+        for (Cookie cookie : cookies) {
+
+            if ("USER_EMAIL".equals(cookie.getName())) {
+                if (!Objects.equals(reservationDto.getUserEmail(), cookie.getValue()))
+                    throw new IllegalArgumentException("Cannot reserve for others");
+            }
+
+        }
+
 
         List<Long> stallIds = reservationDto.getStallIds();
 
@@ -116,7 +132,7 @@ public class VendorReservationServiceImpl implements VendorReservationService {
             reservation.setQrCode(UUID);
             stall.setStatus(StallStatus.RESERVED);
 
-            emailService.sendConfirmation(reservationDto.getUserEmail() , UUID);
+            emailService.sendConfirmation(reservationDto.getUserEmail(), UUID);
 
             reservationDetailsRepository.save(reservation);
             stallDetailsRepository.save(stall);

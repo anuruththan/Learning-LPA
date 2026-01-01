@@ -4,6 +4,7 @@ import com.example.learning_jpa.dto.request.GenreDto;
 import com.example.learning_jpa.dto.request.ReservationDto;
 import com.google.zxing.WriterException;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,5 +21,5 @@ public interface VendorReservationService {
      * Reserves stalls for vendor; sends confirmation email
      * @param reservationDto
      */
-    public void reserve(ReservationDto reservationDto) throws MessagingException, IOException, WriterException;
+    public void reserve(ReservationDto reservationDto, HttpServletRequest request) throws MessagingException, IOException, WriterException;
 }

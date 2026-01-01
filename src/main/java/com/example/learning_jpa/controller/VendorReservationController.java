@@ -4,6 +4,7 @@ import com.example.learning_jpa.dto.GeneralResponseDto;
 import com.example.learning_jpa.dto.request.GenreDto;
 import com.example.learning_jpa.dto.request.ReservationDto;
 import com.example.learning_jpa.service.VendorReservationService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,10 +40,10 @@ public class VendorReservationController {
     }
 
     @PostMapping("/reserve")
-    public GeneralResponseDto reserveStalls(@RequestBody ReservationDto reservationDto){
+    public GeneralResponseDto reserveStalls(HttpServletRequest request, @RequestBody ReservationDto reservationDto){
         response = new GeneralResponseDto();
         try{
-            vendorReservationService.reserve(reservationDto);
+            vendorReservationService.reserve(reservationDto, request);
             response.setRes(true);
             response.setMsg("Stalls reserved successfully.");
             response.setStatusCode(200);

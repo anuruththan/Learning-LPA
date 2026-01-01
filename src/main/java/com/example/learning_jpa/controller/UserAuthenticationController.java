@@ -107,35 +107,8 @@ public class UserAuthenticationController {
     @GetMapping("/refresh")
     public ResponseEntity<GeneralResponseDto> refreshToken(HttpServletRequest request) {
         try {
-            Cookie[] cookies = request.getCookies();
-            if (cookies == null) throw new IllegalArgumentException("Missing refresh token.");
-
-            String accessToken = null;
-            String refreshToken = null;
-
-            for (Cookie cookie : cookies) {
-                if ("ACCESS_TOKEN".equals(cookie.getName())) {
-                    accessToken = cookie.getValue();
-                    break;
-                }
-            }
-
-            for (Cookie cookie : cookies) {
-                if ("REFRESH_TOKEN".equals(cookie.getName())) {
-                    refreshToken = cookie.getValue();
-                    break;
-                }
-            }
-
-            if (refreshToken == null) throw new IllegalArgumentException("Missing refresh token.");
-
-            AuthResult result = userAuthenticationService.refreshToken(accessToken, refreshToken);
-
-            if (!result.generalResponse().isRes()) {
-                return ResponseEntity.status(result.generalResponse().getStatusCode()).body(result.generalResponse());
-            }
-
-            return getGeneralResponseDtoResponseEntity(result); // Use the existing method to set cookies
+            AuthResult result = userAuthenticationService.refreshToken(request);
+            return getGeneralResponseDtoResponseEntity(result);
         } catch (Exception e) {
             GeneralResponseDto errorResponse = new GeneralResponseDto();
             errorResponse.setRes(false);
