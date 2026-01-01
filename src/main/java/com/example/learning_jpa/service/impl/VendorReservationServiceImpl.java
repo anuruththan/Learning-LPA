@@ -7,9 +7,12 @@ import com.example.learning_jpa.enums.StallStatus;
 import com.example.learning_jpa.repository.*;
 import com.example.learning_jpa.service.EmailService;
 import com.example.learning_jpa.service.VendorReservationService;
+import com.google.zxing.WriterException;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -79,7 +82,7 @@ public class VendorReservationServiceImpl implements VendorReservationService {
 
 
     @Override
-    public void reserve(ReservationDto reservationDto) {
+    public void reserve(ReservationDto reservationDto) throws MessagingException, IOException, WriterException {
 
         List<Long> stallIds = reservationDto.getStallIds();
 
@@ -113,10 +116,10 @@ public class VendorReservationServiceImpl implements VendorReservationService {
             reservation.setQrCode(UUID);
             stall.setStatus(StallStatus.RESERVED);
 
+            emailService.sendConfirmation(reservationDto.getUserEmail() , UUID);
+
             reservationDetailsRepository.save(reservation);
             stallDetailsRepository.save(stall);
-
-            emailService.sendConfirmation(reservationDto.getUserEmail() , UUID);
         }
 
     }

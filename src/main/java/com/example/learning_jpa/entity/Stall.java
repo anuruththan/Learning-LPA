@@ -31,7 +31,6 @@ public class Stall {
     private StallStatus status;
 
     @OneToOne(mappedBy = "stall")
-    @JsonIgnore
     private Reservation reservation;
 
     @OneToMany(mappedBy = "stall", cascade = CascadeType.ALL, orphanRemoval = true)

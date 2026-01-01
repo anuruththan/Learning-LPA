@@ -23,7 +23,6 @@ public class Reservation {
 
     @OneToOne
     @JoinColumn(name = "stall_id")
-    @JsonIgnore
     private Stall stall;
 
     private LocalDateTime reservedAt;

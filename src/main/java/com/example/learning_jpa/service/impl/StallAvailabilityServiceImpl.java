@@ -1,5 +1,6 @@
 package com.example.learning_jpa.service.impl;
 
+import com.example.learning_jpa.dto.response.StallDto;
 import com.example.learning_jpa.entity.Stall;
 import com.example.learning_jpa.enums.StallStatus;
 import com.example.learning_jpa.repository.StallDetailsRepository;
@@ -16,17 +17,44 @@ public class StallAvailabilityServiceImpl implements StallAvailabilityService {
     private StallDetailsRepository stallDetailsRepository;
 
     @Override
-    public List<Stall> getAvailableStalls(){
-        return stallDetailsRepository.findByStatus(StallStatus.AVAILABLE);
+    public List<StallDto> getAvailableStalls() {
+        return stallDetailsRepository.findByStatus(StallStatus.AVAILABLE).stream()
+                .map(stall -> {
+                    StallDto dto = new StallDto();
+                    dto.setId(stall.getId());
+                    dto.setSize(stall.getSize());
+                    dto.setStallCode(stall.getStallCode());
+                    dto.setStatus(stall.getStatus());
+                    return dto;
+                })
+                .toList();
     }
 
     @Override
-    public List<Stall> getReservedStalls(){
-        return stallDetailsRepository.findByStatus(StallStatus.RESERVED);
+    public List<StallDto> getReservedStalls() {
+        return stallDetailsRepository.findByStatus(StallStatus.RESERVED).stream()
+                .map(stall -> {
+                    StallDto dto = new StallDto();
+                    dto.setId(stall.getId());
+                    dto.setSize(stall.getSize());
+                    dto.setStallCode(stall.getStallCode());
+                    dto.setStatus(stall.getStatus());
+                    return dto;
+                })
+                .toList();
     }
 
     @Override
-    public List<Stall> getAllStalls(){
-        return stallDetailsRepository.findAll();
+    public List<StallDto> getAllStalls() {
+        return stallDetailsRepository.findAll().stream()
+                .map(stall -> {
+                    StallDto dto = new StallDto();
+                    dto.setId(stall.getId());
+                    dto.setSize(stall.getSize());
+                    dto.setStallCode(stall.getStallCode());
+                    dto.setStatus(stall.getStatus());
+                    return dto;
+                })
+                .toList();
     }
 }

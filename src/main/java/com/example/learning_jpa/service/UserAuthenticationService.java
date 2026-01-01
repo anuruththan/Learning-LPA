@@ -3,7 +3,6 @@ package com.example.learning_jpa.service;
 import com.example.learning_jpa.dto.request.UserLoginDto;
 import com.example.learning_jpa.dto.request.UserSignUp;
 import com.example.learning_jpa.service.result.AuthResult;
-import jakarta.servlet.http.HttpServletResponse;
 
 public interface UserAuthenticationService {
 
