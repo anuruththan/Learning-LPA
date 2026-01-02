@@ -91,7 +91,6 @@ public class VendorReservationServiceImpl implements VendorReservationService {
         if (cookies == null) throw new IllegalArgumentException("Missing refresh token.");
 
         for (Cookie cookie : cookies) {
-
             if ("USER_EMAIL".equals(cookie.getName())) {
                 if (!Objects.equals(reservationDto.getUserEmail(), cookie.getValue()))
                     throw new IllegalArgumentException("Cannot reserve for others");

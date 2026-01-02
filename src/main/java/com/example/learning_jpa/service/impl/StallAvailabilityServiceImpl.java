@@ -1,7 +1,6 @@
 package com.example.learning_jpa.service.impl;
 
 import com.example.learning_jpa.dto.response.StallDto;
-import com.example.learning_jpa.entity.Stall;
 import com.example.learning_jpa.enums.StallStatus;
 import com.example.learning_jpa.repository.StallDetailsRepository;
 import com.example.learning_jpa.service.StallAvailabilityService;
