@@ -13,11 +13,9 @@ import com.example.learning_jpa.service.result.AuthResult;
 import com.example.learning_jpa.util.AccessJwtUtil;
 import com.example.learning_jpa.util.HashUtil;
 import com.example.learning_jpa.util.RefreshJwtUtil;
-import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.antlr.v4.runtime.misc.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
