@@ -1,14 +1,12 @@
-package com.example.learning_jpa.service.impl;
+package com.example.learning_jpa.service;
 
 import com.example.learning_jpa.dto.GeneralResponseDto;
 import com.example.learning_jpa.dto.request.UserLoginDto;
 import com.example.learning_jpa.dto.request.UserSignUp;
 import com.example.learning_jpa.entity.User;
-import com.example.learning_jpa.entity.Vendor;
+import com.example.learning_jpa.entity.UserSession;
 import com.example.learning_jpa.enums.Roles;
 import com.example.learning_jpa.repository.UserAuthRepository;
-import com.example.learning_jpa.repository.VendorDetailsRepository;
-import com.example.learning_jpa.service.UserAuthenticationService;
 import com.example.learning_jpa.service.result.AuthResult;
 import com.example.learning_jpa.util.AccessJwtUtil;
 import com.example.learning_jpa.util.HashUtil;
@@ -17,12 +15,24 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 
 @Slf4j
 @Service
-public class UserAuthenticationServiceImpl implements UserAuthenticationService {
+public class UserAuthenticationServiceImpl {
+
+    @Autowired
+    private UserAuthRepository userAuthRepository;
+
+    @Autowired
+    private UserSessionService sessionService;
+
+    @Autowired
+    private HashUtil passwordEncoder;
 
     @Autowired
     private AccessJwtUtil accessJwtUtil;
@@ -30,153 +40,110 @@ public class UserAuthenticationServiceImpl implements UserAuthenticationService 
     @Autowired
     private RefreshJwtUtil refreshJwtUtil;
 
-    @Autowired
-    private UserAuthRepository userAuthRepository;
-
-    @Autowired
-    private VendorDetailsRepository vendorDetailsRepository;
-
-    @Autowired
-    private HashUtil hashUtil;
-
-    public GeneralResponseDto generalResponse;
-
-
-    @Override
     public AuthResult signUp(UserSignUp userSignUp) {
+        GeneralResponseDto response = new GeneralResponseDto();
 
-        generalResponse = new GeneralResponseDto();
-
+        // Validate role
         if (!Roles.isValidRole(userSignUp.getRoles())) {
-            generalResponse.setData("Invalid Role");
-            generalResponse.setMsg("Enter Valid Roles");
-            return new AuthResult(generalResponse, null, null, null, null);
+            response.setRes(false);
+            response.setMsg("Invalid role provided");
+            response.setStatusCode(HttpStatus.BAD_REQUEST.value());
+            return new AuthResult(response, (String) null, (String) null, null, null);
         }
 
+        // Check if email already exists
         if (userAuthRepository.existsByEmail(userSignUp.getEmail())) {
-            generalResponse.setData("Already Exists Email");
-            generalResponse.setMsg("Enter Valid New Email");
-            return new AuthResult(generalResponse, null, null, null, null);
+            response.setRes(false);
+            response.setMsg("Email already exists");
+            response.setStatusCode(HttpStatus.CONFLICT.value());
+            return new AuthResult(response, (String) null, (String) null, null, null);
         }
-        try {
-            User user = new User();
-            user.setFirstName(userSignUp.getFirstName());
-            user.setLastName(userSignUp.getLastName());
-            user.setEmail(userSignUp.getEmail());
-            user.setPassword(hashUtil.hashPwd(userSignUp.getPassword()));
-            user.setMobileNumber(userSignUp.getMobileNumber());
-            user.setRoles(userSignUp.getRoles());
 
-            User savedUser = userAuthRepository.save(user);
+        // Create user
+        User user = new User();
+        user.setFirstName(userSignUp.getFirstName());
+        user.setLastName(userSignUp.getLastName());
+        user.setMobileNumber(userSignUp.getMobileNumber());
+        user.setEmail(userSignUp.getEmail());
+        user.setPassword(passwordEncoder.hashPwd(userSignUp.getPassword()));
+        user.setRoles(userSignUp.getRoles());
 
-            if (savedUser.getRoles() == Roles.VENDOR) {
-                Vendor vendor = new Vendor();
-                vendor.setUser(savedUser);
-                vendorDetailsRepository.save(vendor);
-            }
+        userAuthRepository.save(user);
 
-            generalResponse.setData("User has been created");
-            generalResponse.setRes(true);
-            generalResponse.setStatusCode(200);
-            generalResponse.setMsg("User has been created");
+        response.setRes(true);
+        response.setMsg("User registered successfully");
+        response.setStatusCode(HttpStatus.CREATED.value());
 
-            String accessToken = accessJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
-            String refreshToken = refreshJwtUtil.generateToken(userSignUp.getEmail(), userSignUp.getRoles());
-
-            return new AuthResult(generalResponse, user.getEmail(), userSignUp.getRoles(), accessToken, refreshToken);
-        } catch (Exception e) {
-            generalResponse.setMsg(e.getMessage());
-            generalResponse.setStatusCode(500);
-            return new AuthResult(generalResponse, null, null, null, null);
-        }
+        return new AuthResult(response, (String) null, (String) null, null, null);
     }
 
-    @Override
-    public AuthResult login(UserLoginDto userLoginDto) {
+    public AuthResult login(UserLoginDto userLoginDto, HttpServletRequest request) {
+        GeneralResponseDto response = new GeneralResponseDto();
 
-        generalResponse = new GeneralResponseDto();
+        User user = userAuthRepository.findByEmail(userLoginDto.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
-        try {
-
-            User user = userAuthRepository.findByEmail(userLoginDto.getEmail()).orElse(null);
-
-            if (user == null) {
-                generalResponse.setData("Invalid Email");
-                generalResponse.setRes(false);
-                generalResponse.setMsg("Email not found. Please check and try again.");
-                generalResponse.setStatusCode(404);
-                return new AuthResult(generalResponse, null, null, null, null);
-            }
-
-            if (!user.getPassword().equals(hashUtil.hashPwd(userLoginDto.getPassword()))) {
-                generalResponse.setData("Invalid Password");
-                generalResponse.setRes(false);
-                generalResponse.setMsg("Incorrect password. Please try again.");
-                generalResponse.setStatusCode(401);
-                return new AuthResult(generalResponse, null, null, null, null);
-            }
-
-
-            generalResponse.setData("User login successful");
-            generalResponse.setRes(true);
-            generalResponse.setMsg("Login Successful");
-            generalResponse.setStatusCode(200);
-
-            String accessToken = accessJwtUtil.generateToken(userLoginDto.getEmail(), user.getRoles());
-            String refreshToken = refreshJwtUtil.generateToken(userLoginDto.getEmail(), user.getRoles());
-
-            return new AuthResult(generalResponse, user.getEmail(), user.getRoles(), accessToken, refreshToken);
-
-        } catch (Exception e) {
-            generalResponse.setMsg(e.getMessage());
-            generalResponse.setStatusCode(500);
-            return new AuthResult(generalResponse, null, null, null, null);
+        if (!Objects.equals(user.getPassword(), passwordEncoder.hashPwd(userLoginDto.getPassword()))) {
+            response.setRes(false);
+            response.setMsg("Invalid email or password");
+            response.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+            return new AuthResult(response, (String) null, (String) null, null, null);
         }
 
+        // Check if employee already has active session (single device restriction)
+        if (sessionService.hasActiveSession(user)) {
+            response.setRes(false);
+            response.setMsg("You are already logged in on another device. Please logout from that device first.");
+            response.setStatusCode(HttpStatus.FORBIDDEN.value());
+            return new AuthResult(response, (String) null, (String) null, null, null);
+        }
+
+        // Create new session
+        UserSession session = sessionService.createSession(user, request);
+        String accessToken = accessJwtUtil.generateToken(user.getEmail(), user.getRoles(), session.getJti());
+
+        response.setRes(true);
+        response.setMsg("Login successful");
+        response.setStatusCode(HttpStatus.OK.value());
+
+        return new AuthResult(response, accessToken, session.getRefreshToken(), user.getEmail(), user.getRoles());
     }
 
-    @Override
     public AuthResult refreshToken(HttpServletRequest request) {
-        generalResponse = new GeneralResponseDto();
-        try {
-            Cookie[] cookies = request.getCookies();
-            if (cookies == null) throw new IllegalArgumentException("Missing refresh token.");
+        GeneralResponseDto response = new GeneralResponseDto();
 
-            String refreshToken = null;
-
-            for (Cookie cookie : cookies) {
-                if ("REFRESH_TOKEN".equals(cookie.getName())) {
-                    refreshToken = cookie.getValue();
-                    break;
-                }
-            }
-
-            if (refreshToken == null) throw new IllegalArgumentException("Missing refresh token.");
-
-            if (!refreshJwtUtil.validateToken(refreshToken))
-                throw new IllegalArgumentException("Invalid refresh token.");
-
-
-            // Validate Refresh Token
-            String email = refreshJwtUtil.extractEmail(refreshToken);
-            Roles role = Roles.valueOf(refreshJwtUtil.extractRole(refreshToken));
-
-            if (email != null) {
-                // Generate New Tokens
-                String newAccessToken = accessJwtUtil.generateToken(email, role);
-                String newRefreshToken = refreshJwtUtil.generateToken(email, role);
-
-                generalResponse.setRes(true);
-                generalResponse.setStatusCode(200);
-                generalResponse.setMsg("Refresh token generated successfully.");
-
-                return new AuthResult(generalResponse, email, role, newAccessToken, newRefreshToken);
-            }
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid refresh token.");
+        String refreshToken = extractRefreshTokenFromCookie(request);
+        if (refreshToken == null) {
+            throw new IllegalArgumentException("Refresh token not found");
         }
-        return new AuthResult(generalResponse, null, null, null, null);
+
+        String email = refreshJwtUtil.extractEmail(refreshToken);
+        User user = userAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Refresh session with new tokens
+        UserSession newSession = sessionService.refreshSession(refreshToken, user, request);
+        String newAccessToken = accessJwtUtil.generateToken(user.getEmail(), user.getRoles(), newSession.getJti());
+
+        response.setRes(true);
+        response.setMsg("Token refreshed successfully");
+        response.setStatusCode(HttpStatus.OK.value());
+
+        return new AuthResult(response, newAccessToken, newSession.getRefreshToken(), user.getEmail(), user.getRoles());
     }
 
+    public void logout(String jti) {
+        sessionService.logoutSession(jti);
+    }
 
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("REFRESH_TOKEN".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
 }

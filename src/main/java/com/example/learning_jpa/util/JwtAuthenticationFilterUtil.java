@@ -1,5 +1,6 @@
 package com.example.learning_jpa.util;
 
+import com.example.learning_jpa.service.UserSessionService;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -15,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +28,9 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
     @Autowired
     private AccessJwtUtil accessJwtUtil;
 
+    @Autowired
+    private UserSessionService sessionService;
+
     private static final String TOKEN_COOKIE_NAME = "ACCESS_TOKEN";
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -34,7 +39,9 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/auth/**"
+            "/api/auth/signup",
+            "/api/auth/login",
+            "/api/auth/refresh"
     );
 
     @Override
@@ -43,7 +50,6 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
         return EXCLUDED_PATTERNS.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
-
 
     @Override
     protected void doFilterInternal(
@@ -56,30 +62,42 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
             if (jwt != null) {
                 String email = accessJwtUtil.extractEmail(jwt);
                 String role = accessJwtUtil.extractRole(jwt);
-                log.info("JWT token extracted successfully. Email: {}, Role: {}", email, role);
-                if (email != null && role != null &&
-                        SecurityContextHolder.getContext().getAuthentication() == null) {
+                String jti = accessJwtUtil.extractJti(jwt);
 
+                log.info("JWT token extracted. Email: {}, Role: {}, JTI: {}", email, role, jti);
+
+                // Validate session is active in database
+                if (!sessionService.isSessionActive(jti)) {
+                    log.warn("Session is not active for JTI: {}", jti);
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"res\": false, \"msg\": \"Session has been terminated. Please log in again.\", \"statusCode\": 401}");
+                    return;
+                }
+
+                if (email != null && role != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     email,
                                     null,
-                                    Collections.singletonList(
-                                            new SimpleGrantedAuthority("ROLE_" + role)
-                                    )
+                                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
                             );
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    // Update last accessed time
+                    sessionService.updateLastAccessed(jti);
                 }
             }
 
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException e) {
-            log.error("JWT token has been expired {}", e.getMessage());
+            log.error("JWT token has expired: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"res\": false, \"msg\": \"JWT token has expired. Please log in again.\", \"statusCode\": 401}");
         } catch (Exception e) {
+            log.error("Token validation error: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"res\": false, \"msg\": \"Invalid token.\", \"statusCode\": 403}");
@@ -96,5 +114,4 @@ public class JwtAuthenticationFilterUtil extends OncePerRequestFilter {
         }
         return null;
     }
-
 }

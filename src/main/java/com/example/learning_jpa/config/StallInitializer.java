@@ -18,7 +18,6 @@ public class StallInitializer {
     @Autowired
     StallDetailsRepository stallRepository;
 
-
     @Value("${stall.count.small}")
     private int small;
     @Value("${stall.count.medium}")

@@ -15,11 +15,15 @@ public interface UserAuthenticationService {
 
     /**
      * @param userLoginDto
-     * **/
-    AuthResult login(UserLoginDto userLoginDto);
+     * @param request
+     *
+     **/
+    AuthResult login(UserLoginDto userLoginDto, HttpServletRequest request);
 
     /**
      * @param request
      * **/
     AuthResult refreshToken( HttpServletRequest request);
+
+    public void logout(String jti);
 }
