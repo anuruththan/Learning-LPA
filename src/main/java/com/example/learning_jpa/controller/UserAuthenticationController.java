@@ -69,7 +69,7 @@ public class UserAuthenticationController {
                 .httpOnly(false) // Allow JavaScript access if needed
                 .secure(true)
                 .path("/")
-                .maxAge(cookieExpiryTime )
+                .maxAge(cookieExpiryTime)
                 .sameSite("Lax")
                 .build();
 
@@ -84,13 +84,29 @@ public class UserAuthenticationController {
     @PostMapping("/signup")
     public ResponseEntity<GeneralResponseDto> signUp(@RequestBody UserSignUp userSignUp) {
         AuthResult result = userAuthenticationService.signUp(userSignUp);
-        return getGeneralResponseDtoResponseEntity(result);
+        try {
+            return getGeneralResponseDtoResponseEntity(result);
+        } catch (Exception e) {
+            GeneralResponseDto errorResponse = new GeneralResponseDto();
+            errorResponse.setRes(false);
+            errorResponse.setMsg("Invalid or expired refresh token.");
+            errorResponse.setStatusCode(HttpServletResponse.SC_UNAUTHORIZED);
+            return ResponseEntity.status(errorResponse.getStatusCode()).body(errorResponse);
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<GeneralResponseDto> login(@RequestBody UserLoginDto userLoginDto, HttpServletRequest request) {
-        AuthResult result = userAuthenticationService.login(userLoginDto, request);
-        return getGeneralResponseDtoResponseEntity(result);
+        try {
+            AuthResult result = userAuthenticationService.login(userLoginDto, request);
+            return getGeneralResponseDtoResponseEntity(result);
+        } catch (Exception e) {
+            GeneralResponseDto errorResponse = new GeneralResponseDto();
+            errorResponse.setRes(false);
+            errorResponse.setMsg("Invalid or expired refresh token.");
+            errorResponse.setStatusCode(HttpServletResponse.SC_UNAUTHORIZED);
+            return ResponseEntity.status(errorResponse.getStatusCode()).body(errorResponse);
+        }
     }
 
     @GetMapping("/refresh")

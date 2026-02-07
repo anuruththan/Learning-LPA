@@ -23,7 +23,7 @@ import java.util.Objects;
 
 @Slf4j
 @Service
-public class UserAuthenticationServiceImpl {
+public class UserAuthenticationServiceImpl implements UserAuthenticationService {
 
     @Autowired
     private UserAuthRepository userAuthRepository;
@@ -48,7 +48,7 @@ public class UserAuthenticationServiceImpl {
             response.setRes(false);
             response.setMsg("Invalid role provided");
             response.setStatusCode(HttpStatus.BAD_REQUEST.value());
-            return new AuthResult(response, (String) null, (String) null, null, null);
+            return new AuthResult(response, (String) null,  null, null, null);
         }
 
         // Check if email already exists
@@ -56,7 +56,7 @@ public class UserAuthenticationServiceImpl {
             response.setRes(false);
             response.setMsg("Email already exists");
             response.setStatusCode(HttpStatus.CONFLICT.value());
-            return new AuthResult(response, (String) null, (String) null, null, null);
+            return new AuthResult(response, (String) null,  null, null, null);
         }
 
         // Create user
@@ -74,7 +74,7 @@ public class UserAuthenticationServiceImpl {
         response.setMsg("User registered successfully");
         response.setStatusCode(HttpStatus.CREATED.value());
 
-        return new AuthResult(response, (String) null, (String) null, null, null);
+        return new AuthResult(response,  null,  null, null, null);
     }
 
     public AuthResult login(UserLoginDto userLoginDto, HttpServletRequest request) {
@@ -87,7 +87,7 @@ public class UserAuthenticationServiceImpl {
             response.setRes(false);
             response.setMsg("Invalid email or password");
             response.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            return new AuthResult(response, (String) null, (String) null, null, null);
+            return new AuthResult(response,  null,  null, null, null);
         }
 
         // Check if employee already has active session (single device restriction)
@@ -95,7 +95,7 @@ public class UserAuthenticationServiceImpl {
             response.setRes(false);
             response.setMsg("You are already logged in on another device. Please logout from that device first.");
             response.setStatusCode(HttpStatus.FORBIDDEN.value());
-            return new AuthResult(response, (String) null, (String) null, null, null);
+            return new AuthResult(response,  null,  null, null, null);
         }
 
         // Create new session
@@ -106,7 +106,7 @@ public class UserAuthenticationServiceImpl {
         response.setMsg("Login successful");
         response.setStatusCode(HttpStatus.OK.value());
 
-        return new AuthResult(response, accessToken, session.getRefreshToken(), user.getEmail(), user.getRoles());
+        return new AuthResult(response, user.getEmail(), user.getRoles(), accessToken, session.getRefreshToken());
     }
 
     public AuthResult refreshToken(HttpServletRequest request) {
@@ -129,7 +129,7 @@ public class UserAuthenticationServiceImpl {
         response.setMsg("Token refreshed successfully");
         response.setStatusCode(HttpStatus.OK.value());
 
-        return new AuthResult(response, newAccessToken, newSession.getRefreshToken(), user.getEmail(), user.getRoles());
+        return new AuthResult(response , user.getEmail(), user.getRoles(), newAccessToken, newSession.getRefreshToken());
     }
 
     public void logout(String jti) {
