@@ -13,7 +13,7 @@ public class UserSignUp {
     String lastName;
 
     @NotBlank(message = "Mobile Number is required")
-    String MobileNumber;
+    String mobileNumber;
 
     @NotBlank(message = "Email is required.")
     @Email(message = "Invalid email format.")
